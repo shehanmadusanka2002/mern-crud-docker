@@ -114,6 +114,14 @@ ssh -i your-key.pem ec2-user@your-ec2-public-ip
 git clone https://github.com/shehanmadusanka2002/mern-crud-docker.git
 cd mern-crud-docker
 
+# Set the API URL environment variable (IMPORTANT!)
+# Replace YOUR_EC2_PUBLIC_IP with your actual EC2 public IP
+export REACT_APP_API_URL=http://YOUR_EC2_PUBLIC_IP:5000
+
+# Disable BuildKit (required for Amazon Linux compatibility)
+export DOCKER_BUILDKIT=0
+export COMPOSE_DOCKER_CLI_BUILD=0
+
 # Start the application
 docker-compose up -d --build
 
@@ -123,6 +131,8 @@ docker ps
 # View logs
 docker-compose logs -f
 ```
+
+**Important**: Replace `YOUR_EC2_PUBLIC_IP` with your actual EC2 public IP address (e.g., `http://52.23.202.6:5000`)
 
 ### For Ubuntu EC2 Instances
 
@@ -144,6 +154,9 @@ sudo usermod -aG docker ubuntu
 # Start Docker
 sudo systemctl start docker
 sudo systemctl enable docker
+
+# Set API URL before deploying
+export REACT_APP_API_URL=http://YOUR_EC2_PUBLIC_IP:5000
 
 # Log out and log back in
 exit
