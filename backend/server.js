@@ -1,42 +1,73 @@
+require("dotenv").config();
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
+const connectDB = require("./config/database");
+const userRoutes = require("./routes/user.routes");
+const { notFound, errorHandler } = require("./middlewares/error.middleware");
+
 const app = express();
 
-app.use(cors());
+// ========================
+// Middleware Configuration
+// ========================
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || "*",
+  credentials: true,
+}));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-mongoose.connect("mongodb://mongo:27017/merncrud")
-  .then(() => console.log("MongoDB connected successfully"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+// Request logging middleware (Development only)
+if (process.env.NODE_ENV === "development") {
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    next();
+  });
+}
 
-const userSchema = new mongoose.Schema({
-  name: String,
-  email: String,
+// ========================
+// Database Connection
+// ========================
+connectDB();
+
+// ========================
+// API Routes
+// ========================
+// Health check route
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "MERN CRUD API is running",
+    version: "1.0.0",
+    endpoints: {
+      users: "/api/users",
+      userStats: "/api/users/stats",
+    },
+  });
 });
 
-const User = mongoose.model("User", userSchema);
+// API version 1 routes
+app.use("/api/users", userRoutes);
 
-// CRUD APIs
-app.get("/users", async (req, res) => {
-  const users = await User.find();
-  res.json(users);
+// Backward compatibility - keep old routes working
+app.use("/users", userRoutes);
+
+// ========================
+// Error Handling
+// ========================
+app.use(notFound);
+app.use(errorHandler);
+
+// ========================
+// Server Configuration
+// ========================
+const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || "0.0.0.0";
+
+app.listen(PORT, HOST, () => {
+  console.log("=================================");
+  console.log(`🚀 Server running in ${process.env.NODE_ENV || "development"} mode`);
+  console.log(`📡 Listening on http://${HOST}:${PORT}`);
+  console.log(`📝 API Documentation: http://${HOST}:${PORT}/`);
+  console.log("=================================");
 });
-
-app.post("/users", async (req, res) => {
-  const user = new User(req.body);
-  await user.save();
-  res.json(user);
-});
-
-app.put("/users/:id", async (req, res) => {
-  const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(user);
-});
-
-app.delete("/users/:id", async (req, res) => {
-  await User.findByIdAndDelete(req.params.id);
-  res.json({ message: "User deleted" });
-});
-
-app.listen(5000, "0.0.0.0", () => console.log("Backend running on port 5000"));
